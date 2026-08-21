@@ -91,11 +91,11 @@ export function HomePage() {
                   </div>
 
                   {/* أزرار إضافة طريحة جديدة أو تصفية */}
-                  <div className="row g-2 mt-2">
+                  <div className="row g-2 mt-2 align-items-stretch">
                     <div className="col-7">
                       <button
                         type="button"
-                        className="btn btn-outline-dashed w-100 py-2.5 d-flex align-items-center justify-content-center gap-1.5 small"
+                        className="btn btn-outline-dashed w-100 h-100 py-2 d-flex align-items-center justify-content-center gap-1.5 small"
                         onClick={() => {
                           setAddClearanceMode(false);
                           setActiveAddLine(lineId);
@@ -107,7 +107,7 @@ export function HomePage() {
                     <div className="col-5">
                       <button
                         type="button"
-                        className="btn btn-outline-purple w-100 py-2.5 d-flex align-items-center justify-content-center gap-1.5 small"
+                        className="btn btn-outline-purple w-100 h-100 py-2 d-flex align-items-center justify-content-center gap-1.5 small"
                         onClick={() => {
                           setAddClearanceMode(true);
                           setActiveAddLine(lineId);

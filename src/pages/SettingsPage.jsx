@@ -6,12 +6,14 @@ import { useProduction } from '../context/ProductionContext';
 import { num } from '../utils/formatters';
 import { toast } from 'sonner';
 
-function EntitySection({ title, items, addLabel, placeholder, onAdd, onUpdate, onRemove }) {
+function EntitySection({ title, items = [], addLabel, placeholder, onAdd, onUpdate, onRemove }) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [editingItem, setEditingItem] = useState(null);
   const [editName, setEditName] = useState('');
   const [deletingItem, setDeletingItem] = useState(null);
+
+  const safeItems = Array.isArray(items) ? items : [];
 
   const handleAdd = (e) => {
     e?.preventDefault();
@@ -43,15 +45,15 @@ function EntitySection({ title, items, addLabel, placeholder, onAdd, onUpdate, o
       <div className="d-flex align-items-center justify-content-between pb-2 border-bottom mb-3">
         <h3 className="h6 fw-black mb-0 text-dark">{title}</h3>
         <span className="badge bg-secondary-subtle text-secondary rounded-pill fw-bold">
-          {items.length}
+          {safeItems.length}
         </span>
       </div>
 
       <div className="d-flex flex-column gap-2 mb-3">
-        {items.length === 0 ? (
+        {safeItems.length === 0 ? (
           <p className="small text-muted text-center py-2 mb-0">لا توجد شنط خاصة بهذا الخط بعد</p>
         ) : (
-          items.map((item) => (
+          safeItems.map((item) => (
             <div
               key={item.id}
               className="p-2.5 bg-light rounded-3 d-flex align-items-center justify-content-between border"
@@ -158,6 +160,7 @@ export function SettingsPage() {
     state,
     LINES,
     getLineName,
+    getBagTypesForLine,
     addBagType,
     updateBagType,
     removeBagType,
@@ -184,6 +187,8 @@ export function SettingsPage() {
     toast.success('تم حفظ الأزرار السريعة بنجاح ✓');
   };
 
+  const linesList = Array.isArray(LINES) ? LINES : [1, 2, 3, 4];
+
   return (
     <div>
       <Header
@@ -194,9 +199,9 @@ export function SettingsPage() {
       <div className="container px-3 pb-5">
         {/* أنواع الشنط مقسمة حسب كل خط */}
         <h2 className="h6 fw-black text-secondary mb-2">أنواع الشنط المخصصة لكل خط:</h2>
-        {LINES.map((lineId) => {
-          const lineName = getLineName(lineId);
-          const lineBagTypes = getBagTypesForLine(lineId);
+        {linesList.map((lineId) => {
+          const lineName = getLineName ? getLineName(lineId) : `خط ${lineId}`;
+          const lineBagTypes = getBagTypesForLine ? getBagTypesForLine(lineId) : [];
 
           return (
             <EntitySection

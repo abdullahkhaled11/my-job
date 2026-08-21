@@ -215,7 +215,7 @@ body {
   color: #7e22ce;
   font-weight: 800;
   border-radius: var(--radius-md);
-  padding: 12px;
+  padding: 14px;
   transition: all 0.2s ease;
 }
 

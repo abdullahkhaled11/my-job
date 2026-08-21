@@ -113,11 +113,11 @@ export function LinePage() {
           </div>
         )}
 
-        <div className="row g-2 mt-2">
+        <div className="row g-2 mt-2 align-items-stretch">
           <div className="col-7">
             <button
               type="button"
-              className="btn btn-outline-dashed w-100 py-3 rounded-3 fw-black d-flex align-items-center justify-content-center gap-2 border-2 bg-white"
+              className="btn btn-outline-dashed w-100 h-100 py-2.5 rounded-3 fw-black d-flex align-items-center justify-content-center gap-2 border-2 bg-white"
               onClick={() => {
                 setAddClearanceMode(false);
                 setShowAddModal(true);
@@ -129,7 +129,7 @@ export function LinePage() {
           <div className="col-5">
             <button
               type="button"
-              className="btn btn-outline-purple w-100 py-3 rounded-3 fw-black d-flex align-items-center justify-content-center gap-1.5 border-2 bg-white"
+              className="btn btn-outline-purple w-100 h-100 py-2.5 rounded-3 fw-black d-flex align-items-center justify-content-center gap-1.5 border-2 bg-white"
               onClick={() => {
                 setAddClearanceMode(true);
                 setShowAddModal(true);
