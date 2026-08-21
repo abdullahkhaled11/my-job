@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Plus, Layers, Pencil } from 'lucide-react';
+import { ChevronLeft, Plus, Layers, Pencil, RefreshCw } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { JobCard } from '../components/production/JobCard';
 import { AddJobModal } from '../components/modals/AddJobModal';
@@ -13,6 +13,7 @@ export function HomePage() {
   const dayId = todayId();
   const jobs = useDayJobs(dayId);
   const [activeAddLine, setActiveAddLine] = useState(null);
+  const [addClearanceMode, setAddClearanceMode] = useState(false);
   const [renamingLine, setRenamingLine] = useState(null);
 
   return (
@@ -89,14 +90,33 @@ export function HomePage() {
                     )}
                   </div>
 
-                  {/* زر إضافة شنطة جديدة للخط */}
-                  <button
-                    type="button"
-                    className="btn btn-outline-dashed w-100 mt-2 d-flex align-items-center justify-content-center gap-2"
-                    onClick={() => setActiveAddLine(lineId)}
-                  >
-                    <Plus size={20} /> إضافة شنطة جديدة لـ {lineName}
-                  </button>
+                  {/* أزرار إضافة طريحة جديدة أو تصفية */}
+                  <div className="row g-2 mt-2">
+                    <div className="col-7">
+                      <button
+                        type="button"
+                        className="btn btn-outline-dashed w-100 py-2.5 d-flex align-items-center justify-content-center gap-1.5 small"
+                        onClick={() => {
+                          setAddClearanceMode(false);
+                          setActiveAddLine(lineId);
+                        }}
+                      >
+                        <Plus size={18} /> إضافة شنطة
+                      </button>
+                    </div>
+                    <div className="col-5">
+                      <button
+                        type="button"
+                        className="btn btn-outline-purple w-100 py-2.5 d-flex align-items-center justify-content-center gap-1.5 small"
+                        onClick={() => {
+                          setAddClearanceMode(true);
+                          setActiveAddLine(lineId);
+                        }}
+                      >
+                        <RefreshCw size={15} /> إضافة تصفية
+                      </button>
+                    </div>
+                  </div>
                 </section>
               );
             })}
@@ -107,7 +127,11 @@ export function HomePage() {
       <AddJobModal
         lineId={activeAddLine || 1}
         show={activeAddLine !== null}
-        onClose={() => setActiveAddLine(null)}
+        initialIsClearance={addClearanceMode}
+        onClose={() => {
+          setActiveAddLine(null);
+          setAddClearanceMode(false);
+        }}
       />
 
       <RenameLineModal

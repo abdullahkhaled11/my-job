@@ -9,6 +9,9 @@ export function StatusBadge({ status, className = '' }) {
     icon = ' ✓';
   } else if (status === 'in_progress') {
     statusClass = 'in_progress';
+  } else if (status === 'clearance') {
+    statusClass = 'clearance';
+    icon = ' 🔄';
   }
 
   return (

@@ -44,17 +44,28 @@ function splitQuantity(total) {
 }
 
 export function createSeedState() {
-  const bagTypes = ["شنطة مدارس", "شنطة سفر", "شنطة تمرين", "شنطة جيش"].map((name) => ({
-    id: generateUid(),
-    name,
-  }));
-
   const lineNames = {
     1: 'صالح',
     2: 'ضياء',
     3: 'عائشة',
     4: 'كريم',
   };
+
+  const bagTypes = [
+    { id: generateUid(), name: "شنطة مدارس", lineId: 1 },
+    { id: generateUid(), name: "شنطة سفر", lineId: 1 },
+    { id: generateUid(), name: "شنطة جيش", lineId: 1 },
+    { id: generateUid(), name: "شنطة تمرين", lineId: 1 },
+    { id: generateUid(), name: "شنطة مدارس", lineId: 2 },
+    { id: generateUid(), name: "شنطة تمرين", lineId: 2 },
+    { id: generateUid(), name: "شنطة سفر", lineId: 3 },
+    { id: generateUid(), name: "شنطة مدارس", lineId: 3 },
+    { id: generateUid(), name: "شنطة جيش", lineId: 3 },
+    { id: generateUid(), name: "شنطة مدارس", lineId: 4 },
+    { id: generateUid(), name: "شنطة سفر", lineId: 4 },
+    { id: generateUid(), name: "شنطة تمرين", lineId: 4 },
+    { id: generateUid(), name: "شنطة جيش", lineId: 4 },
+  ];
 
   const dayId = todayId();
   const base = new Date();
@@ -80,7 +91,7 @@ export function createSeedState() {
       lineId: spec.line,
       supervisorId: null,
       supervisorNameSnapshot: lineNames[spec.line] || `خط ${spec.line}`,
-      bagTypeId: bagTypes.find((b) => b.name === spec.bag)?.id ?? null,
+      bagTypeId: bagTypes.find((b) => b.lineId === spec.line && b.name === spec.bag)?.id ?? null,
       bagTypeNameSnapshot: spec.bag,
       requiredQuantity: spec.required,
       createdAt,

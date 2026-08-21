@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Hash } from 'lucide-react';
+import { X, Plus, Hash, RefreshCw } from 'lucide-react';
 import { useProduction, jobCurrent, jobRemaining } from '../../context/ProductionContext';
 import { num, formatTime } from '../../utils/formatters';
 import { toast } from 'sonner';
@@ -18,13 +18,14 @@ export function AddProductionModal({ job, show, onClose }) {
 
   if (!show || !job) return null;
 
+  const isClearance = !!job.isClearance;
   const current = jobCurrent(job);
-  const remaining = jobRemaining(job);
+  const remaining = isClearance ? Infinity : jobRemaining(job);
   const lineName = getLineName ? getLineName(job.lineId) : `خط ${job.lineId}`;
 
   const handlePick = (val) => {
     const value = Math.max(0, Math.floor(Number(val) || 0));
-    if (value > remaining) {
+    if (!isClearance && value > remaining) {
       setAmount(remaining);
       toast.error(`المتبقي ${num(remaining)} قطعة فقط`);
       return;
@@ -37,11 +38,11 @@ export function AddProductionModal({ job, show, onClose }) {
       toast.error('يرجى اختيار أو كتابة كمية الإنتاج');
       return;
     }
-    const safeAmount = Math.min(amount, remaining);
+    const safeAmount = isClearance ? amount : Math.min(amount, remaining);
     const entryId = addEntry(job.id, safeAmount);
     onClose();
 
-    toast.success(`تم تسجيل إنتاج ${num(safeAmount)} قطعة بنجاح ✓`, {
+    toast.success(`تم تسجيل ${isClearance ? 'إنتاج تصفية' : 'إنتاج'} ${num(safeAmount)} قطعة بنجاح ${isClearance ? '🔄' : '✓'}`, {
       action: entryId
         ? {
             label: 'تراجع',
@@ -60,9 +61,9 @@ export function AddProductionModal({ job, show, onClose }) {
       <div className="modal-content-custom">
         <div className="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
           <div>
-            <h5 className="fw-black mb-0">إضافة إنتاج</h5>
+            <h5 className="fw-black mb-0">{isClearance ? 'إضافة إنتاج تصفية 🔄' : 'إضافة إنتاج'}</h5>
             <small className="text-muted fw-bold">
-              خط {lineName} — {job.bagTypeNameSnapshot}
+              {lineName} — {job.bagTypeNameSnapshot} {isClearance ? '(تصفية)' : ''}
             </small>
           </div>
           <button type="button" className="btn btn-light btn-sm rounded-circle p-1.5" onClick={onClose}>
@@ -76,14 +77,16 @@ export function AddProductionModal({ job, show, onClose }) {
             <div className="bg-light p-3 rounded-3 text-center border">
               <small className="text-muted d-block fw-bold mb-1">الإنتاج الحالي</small>
               <div className="fw-black fs-5">
-                {num(current)} <span className="fs-6 text-muted">/ {num(job.requiredQuantity)}</span>
+                {num(current)} {!isClearance && <span className="fs-6 text-muted">/ {num(job.requiredQuantity)}</span>}
               </div>
             </div>
           </div>
           <div className="col-6">
             <div className="bg-light p-3 rounded-3 text-center border">
-              <small className="text-muted d-block fw-bold mb-1">المتبقي</small>
-              <div className="fw-black fs-5 text-primary">{num(remaining)}</div>
+              <small className="text-muted d-block fw-bold mb-1">{isClearance ? 'نوع العملية' : 'المتبقي'}</small>
+              <div className={`fw-black fs-5 ${isClearance ? 'text-purple' : 'text-primary'}`}>
+                {isClearance ? 'تصفية 🔄' : num(remaining)}
+              </div>
             </div>
           </div>
         </div>
@@ -112,8 +115,8 @@ export function AddProductionModal({ job, show, onClose }) {
               onChange={(e) => handlePick(e.target.value)}
             />
           ) : (
-            <div className="p-3 bg-light rounded-3 text-center border border-2 border-primary-subtle">
-              <span className="display-5 fw-black text-primary">+{num(amount)}</span>
+            <div className={`p-3 bg-light rounded-3 text-center border border-2 ${isClearance ? 'border-purple-subtle' : 'border-primary-subtle'}`}>
+              <span className={`display-5 fw-black ${isClearance ? 'text-purple' : 'text-primary'}`}>+{num(amount)}</span>
               <span className="small text-muted ms-2 fw-bold">قطعة</span>
             </div>
           )}
@@ -151,10 +154,6 @@ export function AddProductionModal({ job, show, onClose }) {
               <span>الإجمالي بعد الإضافة:</span>
               <span className="fs-5 fw-black text-dark">{num(current + amount)} قطعة</span>
             </div>
-            <div className="d-flex justify-content-between mt-1 small text-muted">
-              <span>المتبقي بعد الإضافة:</span>
-              <span className="fw-bold">{num(Math.max(0, remaining - amount))} قطعة</span>
-            </div>
           </div>
         )}
 
@@ -162,7 +161,8 @@ export function AddProductionModal({ job, show, onClose }) {
         <button
           type="button"
           disabled={amount <= 0}
-          className="btn-primary-custom w-100 py-3 fs-5"
+          className={isClearance ? 'btn w-100 py-3 fs-5 text-white fw-black rounded-3' : 'btn-primary-custom w-100 py-3 fs-5'}
+          style={isClearance ? { backgroundColor: '#7e22ce', borderColor: '#7e22ce' } : {}}
           onClick={handleConfirm}
         >
           تأكيد الإضافة الآن

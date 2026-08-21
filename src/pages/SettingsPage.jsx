@@ -49,7 +49,7 @@ function EntitySection({ title, items, addLabel, placeholder, onAdd, onUpdate, o
 
       <div className="d-flex flex-column gap-2 mb-3">
         {items.length === 0 ? (
-          <p className="small text-muted text-center py-2 mb-0">لا توجد عناصر مضافة بعد</p>
+          <p className="small text-muted text-center py-2 mb-0">لا توجد شنط خاصة بهذا الخط بعد</p>
         ) : (
           items.map((item) => (
             <div
@@ -156,9 +156,8 @@ function EntitySection({ title, items, addLabel, placeholder, onAdd, onUpdate, o
 export function SettingsPage() {
   const {
     state,
-    addSupervisor,
-    updateSupervisor,
-    removeSupervisor,
+    LINES,
+    getLineName,
     addBagType,
     updateBagType,
     removeBagType,
@@ -189,31 +188,29 @@ export function SettingsPage() {
     <div>
       <Header
         title="الإعدادات والبيانات الأساسية"
-        subtitle="إدارة المشرفين، أنواع الشنط، وتخصيص التطبيق"
+        subtitle="إدارة أنواع الشنط لكل خط وتخصيص التطبيق"
       />
 
       <div className="container px-3 pb-5">
-        {/* المشرفون */}
-        <EntitySection
-          title="قائمة المشرفين"
-          items={state.supervisors || []}
-          addLabel="إضافة مشرف جديد"
-          placeholder="اسم المشرف"
-          onAdd={addSupervisor}
-          onUpdate={updateSupervisor}
-          onRemove={removeSupervisor}
-        />
+        {/* أنواع الشنط مقسمة حسب كل خط */}
+        <h2 className="h6 fw-black text-secondary mb-2">أنواع الشنط المخصصة لكل خط:</h2>
+        {LINES.map((lineId) => {
+          const lineName = getLineName(lineId);
+          const lineBagTypes = getBagTypesForLine(lineId);
 
-        {/* أنواع الشنط */}
-        <EntitySection
-          title="أنواع الشنط"
-          items={state.bagTypes || []}
-          addLabel="إضافة نوع شنطة جديد"
-          placeholder="اسم الشنطة"
-          onAdd={addBagType}
-          onUpdate={updateBagType}
-          onRemove={removeBagType}
-        />
+          return (
+            <EntitySection
+              key={lineId}
+              title={`أنواع شنط ${lineName}`}
+              items={lineBagTypes}
+              addLabel={`إضافة نوع شنطة جديد لـ ${lineName}`}
+              placeholder={`اسم الشنطة لـ ${lineName}`}
+              onAdd={(name) => addBagType(name, lineId)}
+              onUpdate={updateBagType}
+              onRemove={removeBagType}
+            />
+          );
+        })}
 
         {/* تخصيص أزرار الزيادة السريعة */}
         <div className="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
@@ -279,7 +276,7 @@ export function SettingsPage() {
       <ConfirmModal
         show={showResetConfirm}
         title="استعادة البيانات التجريبية"
-        message="هل تريد إعادة ضبط التطبيق للبيانات التجريبية الافتراضية لجميع الخطوط والمشرفين؟"
+        message="هل تريد إعادة ضبط التطبيق للبيانات التجريبية الافتراضية لجميع الخطوط؟"
         confirmText="استعادة الآن"
         isDanger={false}
         onConfirm={() => {
@@ -292,7 +289,7 @@ export function SettingsPage() {
       <ConfirmModal
         show={showClearConfirm}
         title="مسح جميع البيانات نهائيًا"
-        message="تحذير: سيتم حذف جميع سجلات الإنتاج والشنط والمشرفين نهائيًا ولا يمكن التراجع عن هذه الخطوة."
+        message="تحذير: سيتم حذف جميع سجلات الإنتاج والشنط نهائيًا ولا يمكن التراجع عن هذه الخطوة."
         confirmText="مسح نهائي"
         isDanger={true}
         onConfirm={() => {

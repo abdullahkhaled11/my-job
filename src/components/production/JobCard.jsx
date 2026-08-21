@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, History, ChevronDown, ChevronUp, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, History, ChevronDown, ChevronUp, Pencil, Trash2, CheckCircle2, RefreshCw } from 'lucide-react';
 import {
   useProduction,
   jobCurrent,
@@ -31,6 +31,7 @@ export function JobCard({ job }) {
   const entries = sortedEntries(job);
   const lastEntry = entries[0];
   const lineName = getLineName(job.lineId);
+  const isClearance = !!job.isClearance;
 
   const handleSaveEdit = (entryId, newQty) => {
     updateEntry(job.id, entryId, newQty);
@@ -50,11 +51,13 @@ export function JobCard({ job }) {
   };
 
   return (
-    <div className="job-card">
+    <div className={`job-card ${isClearance ? 'border-purple-subtle bg-white' : ''}`}>
       {/* رأس البطاقة */}
       <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
         <div>
-          <h3 className="h6 fw-black mb-0 text-dark">{job.bagTypeNameSnapshot}</h3>
+          <h3 className="h6 fw-black mb-0 text-dark">
+            {job.bagTypeNameSnapshot}
+          </h3>
         </div>
 
         <div className="d-flex align-items-center gap-2">
@@ -73,14 +76,26 @@ export function JobCard({ job }) {
       {/* الأرقام والكميات */}
       <div className="d-flex align-items-baseline justify-content-between mt-3 mb-1">
         <div>
-          <span className="fs-2 fw-black text-dark">{num(current)}</span>
-          <span className="text-muted fw-bold fs-6"> / {num(job.requiredQuantity)}</span>
-          <span className="small text-muted ms-1">قطعة</span>
+          <span className={`fs-2 fw-black ${isClearance ? 'text-purple' : 'text-dark'}`}>{num(current)}</span>
+          {!isClearance ? (
+            <>
+              <span className="text-muted fw-bold fs-6"> / {num(job.requiredQuantity)}</span>
+              <span className="small text-muted ms-1">قطعة</span>
+            </>
+          ) : (
+            <span className="small text-muted ms-1 fw-bold">قطعة مجمعة (تصفية)</span>
+          )}
         </div>
         <div className="text-end">
-          <span className={`fw-bold small ${status === 'completed' ? 'text-success' : 'text-primary'}`}>
-            {status === 'completed' ? 'تم الإنتاج بالكامل ✓' : `المتبقي: ${num(remaining)} قطعة`}
-          </span>
+          {!isClearance ? (
+            <span className={`fw-bold small ${status === 'completed' ? 'text-success' : 'text-primary'}`}>
+              {status === 'completed' ? 'تم الإنتاج بالكامل ✓' : `المتبقي: ${num(remaining)} قطعة`}
+            </span>
+          ) : (
+            <span className="fw-bold small text-purple bg-purple-subtle px-2.5 py-1 rounded-pill d-inline-flex align-items-center gap-1">
+              <RefreshCw size={12} /> بدون تارجت محدد
+            </span>
+          )}
         </div>
       </div>
 
@@ -89,12 +104,17 @@ export function JobCard({ job }) {
         <div className="custom-progress-track">
           <div
             className={`custom-progress-fill ${status === 'completed' ? 'completed' : ''}`}
-            style={{ width: `${progress}%` }}
+            style={{
+              width: isClearance ? '100%' : `${progress}%`,
+              background: isClearance ? 'linear-gradient(90deg, #c084fc, #7e22ce)' : undefined,
+            }}
           />
         </div>
         <div className="d-flex justify-content-between align-items-center mt-1">
-          <span className="small text-muted fw-semibold">نسبة الإنجاز</span>
-          <span className="small fw-black text-dark">{num(progress)}%</span>
+          <span className="small text-muted fw-semibold">{isClearance ? 'نوع الإنتاج' : 'نسبة الإنجاز'}</span>
+          <span className={`small fw-black ${isClearance ? 'text-purple' : 'text-dark'}`}>
+            {isClearance ? 'تصفية مفتوحة ♾️' : `${num(progress)}%`}
+          </span>
         </div>
       </div>
 
@@ -108,7 +128,7 @@ export function JobCard({ job }) {
         ) : (
           <span>لا توجد عمليات إنتاج مسجلة اليوم</span>
         )}
-        {job.completedAt && (
+        {job.completedAt && !isClearance && (
           <div className="mt-1 text-success fw-bold d-flex align-items-center gap-1">
             <CheckCircle2 size={14} /> اكتملت الساعة {formatTime(job.completedAt)}
           </div>
@@ -117,17 +137,18 @@ export function JobCard({ job }) {
 
       {/* أزرار الإجراءات */}
       <div className="d-flex gap-2">
-        {status === 'completed' ? (
+        {!isClearance && status === 'completed' ? (
           <div className="status-badge completed flex-grow-1 py-3 justify-content-center fs-6 rounded-3">
             <CheckCircle2 size={18} /> تم اكتمال الإنتاج بنجاح
           </div>
         ) : (
           <button
             type="button"
-            className="btn-primary-custom flex-grow-1 py-3"
+            className={isClearance ? 'btn flex-grow-1 py-3 text-white fw-black rounded-3' : 'btn-primary-custom flex-grow-1 py-3'}
+            style={isClearance ? { backgroundColor: '#7e22ce', borderColor: '#7e22ce' } : {}}
             onClick={() => setShowAddModal(true)}
           >
-            <Plus size={18} /> إضافة إنتاج
+            <Plus size={18} /> {isClearance ? 'إضافة إنتاج تصفية' : 'إضافة إنتاج'}
           </button>
         )}
 
@@ -200,7 +221,7 @@ export function JobCard({ job }) {
       <EditEntryModal
         show={!!editingEntry}
         entry={editingEntry}
-        maxAllowed={editingEntry ? job.requiredQuantity - (current - editingEntry.quantity) : 0}
+        maxAllowed={isClearance ? 999999 : (editingEntry ? job.requiredQuantity - (current - editingEntry.quantity) : 0)}
         onSave={handleSaveEdit}
         onClose={() => setEditingEntry(null)}
       />
@@ -215,9 +236,9 @@ export function JobCard({ job }) {
 
       <ConfirmModal
         show={showDeleteJobModal}
-        title="حذف الشنطة بالكامل"
-        message={`هل أنت متأكد من رغبتك في حذف شنطة «${job.bagTypeNameSnapshot}» بالكامل من خط ${lineName}؟ لن تظهر الشنطة أو عملياتها وكأنها لم تضف من الأساس.`}
-        confirmText="حذف الشنطة"
+        title={isClearance ? 'حذف التصفية بالكامل' : 'حذف الشنطة بالكامل'}
+        message={`هل أنت متأكد من رغبتك في حذف «${job.bagTypeNameSnapshot}» (${isClearance ? 'تصفية' : 'شنطة'}) بالكامل من ${lineName}؟ لن تظهر العمليات وكأنها لم تضف من الأساس.`}
+        confirmText="حذف بالكامل"
         isDanger={true}
         onConfirm={handleConfirmDeleteJob}
         onClose={() => setShowDeleteJobModal(false)}

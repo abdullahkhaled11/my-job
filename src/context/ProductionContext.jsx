@@ -12,6 +12,8 @@ export function jobCurrent(job) {
 }
 
 export function jobStatus(job) {
+  if (!job) return 'not_started';
+  if (job.isClearance) return 'clearance';
   const current = jobCurrent(job);
   if (job.requiredQuantity > 0 && current >= job.requiredQuantity) return 'completed';
   if (current > 0) return 'in_progress';
@@ -19,10 +21,14 @@ export function jobStatus(job) {
 }
 
 export function jobRemaining(job) {
+  if (!job) return 0;
+  if (job.isClearance) return Infinity;
   return Math.max(0, job.requiredQuantity - jobCurrent(job));
 }
 
 export function jobProgress(job) {
+  if (!job) return 0;
+  if (job.isClearance) return 100;
   if (!job.requiredQuantity || job.requiredQuantity <= 0) return 0;
   return Math.min(100, Math.round((jobCurrent(job) / job.requiredQuantity) * 100));
 }
@@ -51,7 +57,7 @@ export function lineTotal(jobs, lineId) {
 
 function withRecalc(job) {
   const current = jobCurrent(job);
-  const completed = job.requiredQuantity > 0 && current >= job.requiredQuantity;
+  const completed = !job.isClearance && job.requiredQuantity > 0 && current >= job.requiredQuantity;
   const last = [...(job.entries || [])].sort((a, b) => a.timestamp - b.timestamp).at(-1);
   return {
     ...job,
@@ -81,6 +87,18 @@ export function ProductionProvider({ children }) {
     if (!next.lineNames) {
       next.lineNames = DEFAULT_LINE_NAMES;
     }
+    // Migrate old bagTypes without lineId so each line has strictly isolated bag types
+    if (next.bagTypes && Array.isArray(next.bagTypes)) {
+      const hasUnbound = next.bagTypes.some((b) => !b.lineId);
+      if (hasUnbound) {
+        const seeded = createSeedState();
+        next.bagTypes = seeded.bagTypes;
+      }
+    } else {
+      const seeded = createSeedState();
+      next.bagTypes = seeded.bagTypes;
+    }
+
     setState(next);
     setReady(true);
   }, []);
@@ -100,6 +118,17 @@ export function ProductionProvider({ children }) {
       return state.lineNames?.[id] || DEFAULT_LINE_NAMES[id] || `خط ${id}`;
     },
     [state.lineNames]
+  );
+
+  const getBagTypesForLine = useCallback(
+    (lineId) => {
+      if (!lineId) return [];
+      const targetLine = Number(lineId);
+      return (state.bagTypes || []).filter(
+        (b) => Number(b.lineId) === targetLine
+      );
+    },
+    [state.bagTypes]
   );
 
   const mutateJob = useCallback((jobId, fn) => {
@@ -127,13 +156,17 @@ export function ProductionProvider({ children }) {
     }));
   }, []);
 
-  const addBagType = useCallback((name) => {
+  const addBagType = useCallback((name, lineId) => {
     const trimmed = name?.trim();
-    if (!trimmed) return null;
+    if (!trimmed || !lineId) return null;
     const id = generateUid();
+    const targetLine = Number(lineId);
     setState((prev) => ({
       ...prev,
-      bagTypes: [...prev.bagTypes, { id, name: trimmed }],
+      bagTypes: [
+        ...prev.bagTypes,
+        { id, name: trimmed, lineId: targetLine },
+      ],
     }));
     return id;
   }, []);
@@ -159,7 +192,7 @@ export function ProductionProvider({ children }) {
   }, []);
 
   const addJob = useCallback(
-    ({ lineId, bagTypeId, requiredQuantity }) => {
+    ({ lineId, bagTypeId, requiredQuantity, isClearance }) => {
       const id = generateUid();
       const idNum = Number(lineId);
       const name = state.lineNames?.[idNum] || DEFAULT_LINE_NAMES[idNum] || `خط ${idNum}`;
@@ -172,9 +205,10 @@ export function ProductionProvider({ children }) {
           lineId: idNum,
           supervisorId: null,
           supervisorNameSnapshot: name,
-          bagTypeId,
-          bagTypeNameSnapshot: bag?.name ?? 'غير محدد',
-          requiredQuantity: Number(requiredQuantity) || 0,
+          bagTypeId: isClearance ? null : bagTypeId,
+          bagTypeNameSnapshot: isClearance ? 'تصفية' : (bag?.name ?? 'غير محدد'),
+          requiredQuantity: isClearance ? 0 : (Number(requiredQuantity) || 0),
+          isClearance: !!isClearance,
           createdAt: Date.now(),
           completedAt: null,
           entries: [],
@@ -239,14 +273,10 @@ export function ProductionProvider({ children }) {
   }, []);
 
   const clearAll = useCallback(() => {
-    const resetState = {
-      supervisors: [],
-      bagTypes: [],
-      lineNames: DEFAULT_LINE_NAMES,
-      quickAdds: [10, 25, 50, 100],
+    setState((prev) => ({
+      ...prev,
       jobs: [],
-    };
-    setState(resetState);
+    }));
   }, []);
 
   const resetToSeed = useCallback(() => {
@@ -261,6 +291,7 @@ export function ProductionProvider({ children }) {
       LINES,
       DEFAULT_LINE_NAMES,
       getLineName,
+      getBagTypesForLine,
       updateLineName,
       addBagType,
       updateBagType,
@@ -278,6 +309,7 @@ export function ProductionProvider({ children }) {
       state,
       ready,
       getLineName,
+      getBagTypesForLine,
       updateLineName,
       addBagType,
       updateBagType,
